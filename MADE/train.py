@@ -4,26 +4,16 @@ from .made import MADE
 from .datasets.data_loaders import get_data, get_data_loaders
 from .utils.train import train_one_epoch_made
 from .utils.validation import val_made
-import sys
 import os
 
-def main(white_type, black_type, TRAIN, TEST, DEVICE, MINLOSS):
-    
-    print('train', white_type, black_type, TRAIN, TEST, DEVICE, MINLOSS)
-
-    root_dir = os.path.join('../data/', 'white_' + white_type + '_black_' + black_type, 'source')
-    data_dir = os.path.join(root_dir, 'data')
-    model_dir = os.path.join(root_dir, 'model')
-    feat_dir = os.path.join(root_dir, 'feat')
-    made_dir = os.path.join(root_dir, 'made')
+def main(feat_dir, model_dir, TRAIN, DEVICE, MINLOSS):
 
     # --------- SET PARAMETERS ----------
-    model_name = 'made'  # 'MAF' or 'MADE'
+    model_name = 'made'
     dataset_name = 'myData'
     train_type = TRAIN
-    test_type = TEST
+    test_type = TRAIN
     batch_size = 128
-    n_mades = 5
     hidden_dims = [512]
     lr = 1e-4
     random_order = False
@@ -31,7 +21,6 @@ def main(white_type, black_type, TRAIN, TEST, DEVICE, MINLOSS):
     min_loss = int(MINLOSS)
     seed = 290713
     cuda_device = int(DEVICE) if DEVICE != 'None' else None
-    plot = True
     max_epochs = 2000
     # -----------------------------------
 
@@ -87,7 +76,3 @@ def main(white_type, black_type, TRAIN, TEST, DEVICE, MINLOSS):
         else:
             print("Patience counter: {}/{}\n Terminate training!".format(i, patience))
             break
-
-if __name__ == '__main__':
-    _, white_type, black_type, TRAIN, TEST, DEVICE, MINLOSS = sys.argv
-    main(white_type, black_type, TRAIN, TEST, DEVICE, MINLOSS)

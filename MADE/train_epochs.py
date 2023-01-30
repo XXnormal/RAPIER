@@ -2,32 +2,20 @@ import torch
 import numpy as np
 from .made import MADE
 from .datasets.data_loaders import get_data, get_data_loaders
-from .utils.train import train_one_epoch_maf, train_one_epoch_made
-from .utils.validation import val_maf, val_made
-from .utils.test import test_maf, test_made
-from .utils.plot import sample_digits_maf, plot_losses
+from .utils.train import train_one_epoch_made
+from .utils.validation import val_made
 import sys
 import os
 from .predict_epochs import predict_epochs
 import re
 
-def main(white_type, black_type, TRAIN, TEST, DEVICE, MINLOSS):
-
-    print('train_epochs', white_type, black_type, TRAIN, TEST, DEVICE, MINLOSS)
-
-    root_dir = os.path.join('../data/', 'white_' + white_type + '_black_' + black_type, 'source')
-    data_dir = os.path.join(root_dir, 'data')
-    model_dir = os.path.join(root_dir, 'model')
-    feat_dir = os.path.join(root_dir, 'feat')
-    made_dir = os.path.join(root_dir, 'made')
+def main(feat_dir, model_dir, made_dir, TRAIN, DEVICE, MINLOSS):
 
     # --------- SET PARAMETERS ----------
     model_name = 'made'  # 'MAF' or 'MADE'
     dataset_name = 'myData'
     train_type = TRAIN
-    test_type = TEST
     batch_size = 128
-    n_mades = 5
     hidden_dims = [512]
     lr = 1e-4
     random_order = False
@@ -46,7 +34,7 @@ def main(white_type, black_type, TRAIN, TEST, DEVICE, MINLOSS):
             os.system('rm ' + os.path.join(made_dir, filename))
             
     # Get dataset.=
-    data = get_data(dataset_name, feat_dir, train_type, test_type, True)
+    data = get_data(dataset_name, feat_dir, train_type, train_type, True)
     train = torch.from_numpy(data.train.x)
     # Get data loaders.
     train_loader, val_loader, test_loader = get_data_loaders(data, batch_size)
@@ -72,18 +60,14 @@ def main(white_type, black_type, TRAIN, TEST, DEVICE, MINLOSS):
     max_loss = np.inf
     # Training loop.
     for epoch in range(1, max_epochs):
-        if model_name == "maf":
-            train_loss = train_one_epoch_maf(model, epoch, optimiser, train_loader)
-            val_loss = val_maf(model, train, val_loader)
-        elif model_name == "made":
-            train_loss = train_one_epoch_made(model, epoch, optimiser, train_loader, cuda_device)
-            val_loss = val_made(model, val_loader, cuda_device)
+        train_loss = train_one_epoch_made(model, epoch, optimiser, train_loader, cuda_device)
+        val_loss = val_made(model, val_loader, cuda_device)
 
         epochs_list.append(epoch)
         train_losses.append(train_loss)
         val_losses.append(val_loss)
 
-        if epoch % 10 == 0:
+        if (epoch+1) % 10 == 0:
             model = model.cpu()
             torch.save(
                 model, os.path.join(model_dir, 'epochs_' + save_name)
@@ -91,12 +75,8 @@ def main(white_type, black_type, TRAIN, TEST, DEVICE, MINLOSS):
             if cuda_device != None:
                 model = model.cuda()
 
-            if TRAIN == 'w_all_new':
-                predict_epochs(white_type, black_type, TRAIN, 'w%s_new'%(TRAIN[1:]), DEVICE, epoch)
-                predict_epochs(white_type, black_type, TRAIN, 'b%s_new'%(TRAIN[1:]), DEVICE, epoch)
-            else:
-                predict_epochs(white_type, black_type, TRAIN, 'w%s'%(TRAIN[1:]), DEVICE, epoch)
-                predict_epochs(white_type, black_type, TRAIN, 'b%s'%(TRAIN[1:]), DEVICE, epoch)
+            predict_epochs(feat_dir, model_dir, made_dir, TRAIN, 'w', DEVICE, epoch)
+            predict_epochs(feat_dir, model_dir, made_dir, TRAIN, 'b', DEVICE, epoch)
 
         # Early stopping. Save model on each epoch with improvement.
         if val_loss < max_loss and train_loss > min_loss:
@@ -118,6 +98,3 @@ def main(white_type, black_type, TRAIN, TEST, DEVICE, MINLOSS):
             print("Patience counter: {}/{}\n Terminate training!".format(i, patience))
             break
 
-if __name__ == '__main__':
-    _, white_type, black_type, TRAIN, TEST, DEVICE, MINLOSS = sys.argv
-    main(white_type, black_type, TRAIN, TEST, DEVICE, MINLOSS)

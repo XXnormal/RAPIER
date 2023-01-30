@@ -9,23 +9,15 @@ import os
 from sklearn.datasets import make_blobs
 import math
 
-def main(white_type, black_type, TRAIN, cuda_device):
-
-    print('train_gen_GAN', white_type, black_type, TRAIN, cuda_device)
-
-    root_dir = os.path.join('../data/', 'white_' + white_type + '_black_' + black_type, 'source')
-    model_dir = os.path.join(root_dir, 'model')
-    feat_dir = os.path.join(root_dir, 'feat')
-    made_dir = os.path.join(root_dir, 'made')
+def main(feat_dir, model_dir, made_dir, TRAIN, cuda_device):
 
     train_type_w = 'w_' + TRAIN
     train_type_b = 'b_' + TRAIN
-    w = np.load(os.path.join(feat_dir, train_type_w + '.npy'))[:, :-1]
-    b = np.load(os.path.join(feat_dir, train_type_b + '.npy'))[:, :-1]
+    w = np.load(os.path.join(feat_dir, train_type_w + '.npy'))
+    b = np.load(os.path.join(feat_dir, train_type_b + '.npy'))
 
     input_size = 2
     output_size = w.shape[1]
-    print(output_size)
     hiddens = [8, 16]
     device = int(cuda_device) if cuda_device != 'None' else None
     model_name = 'made' # 'MAF' or 'MADE'
@@ -34,8 +26,6 @@ def main(white_type, black_type, TRAIN, cuda_device):
     hidden_dims = [512]
     epochs = 500 # Modified
     lr = 5e-3
-    i = 0
-    patience = 30
 
     load_name_w = f"{model_name}_{dataset_name}_{train_type_w}_{'_'.join(str(d) for d in hidden_dims)}.pt"
     load_name_b = f"{model_name}_{dataset_name}_{train_type_b}_{'_'.join(str(d) for d in hidden_dims)}.pt"
@@ -76,10 +66,6 @@ def main(white_type, black_type, TRAIN, cuda_device):
     w_min = NLogP_w_sort[int(w_min_ratio * len(NLogP_w))]
     w_max = NLogP_w_sort[int(w_max_ratio * len(NLogP_w))]
     b_max = NLogP_b_sort[int(b_max_ratio * len(NLogP_b))]
-
-    print(w_MAX, w_MIN)
-    print(w_max, w_min)
-    print(b_max)
 
     BGenModel_1 = GEN(input_size, hiddens, output_size, device)
     if device != None:
@@ -290,19 +276,4 @@ def main(white_type, black_type, TRAIN, cuda_device):
                 loss_D.backward()
                 optimizer_D.step()
 
-                correct_num = D_w.lt(0.5).sum() + D_b.gt(0.5).sum()
-                total_num = len(D_w) + len(D_b)
-                accs_ori.append((correct_num / total_num).cpu().numpy())
-                
-                correct_num = correct_num + D_Gb1.gt(0.5).sum() + D_Gb2.gt(0.5).sum() + D_Gw.lt(0.5).sum()
-                total_num = total_num + len(D_Gb1) + len(D_Gb2) + len(Gw)
-                accs_gen.append((correct_num / total_num).cpu().numpy())
-
-            print('Acc_ori of Discriminator: %.5f.' % (np.mean(accs_ori)))
-            print('Acc_gen of Discriminator: %.5f.' % (np.mean(accs_gen)))
-
             save_model(D, save_name_D)
-            
-if __name__ == '__main__':
-    _, white_type, black_type, TRAIN, cuda_device = sys.argv
-    main(white_type, black_type, TRAIN, cuda_device)

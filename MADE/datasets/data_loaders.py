@@ -1,10 +1,9 @@
-from xmlrpc.client import boolean
 import torch
 from .myData import MyDataset
 
-def get_data(dataset: str, feat_dir=None, train_type=None, test_type=None, train_with_label=True, test_with_label=True):
+def get_data(dataset: str, feat_dir=None, train_type=None, test_type=None):
     if dataset == 'myData':
-        return MyDataset(feat_dir, train_type, test_type, train_with_label, test_with_label)
+        return MyDataset(feat_dir, train_type, test_type)
 
     raise ValueError(
         f"Unknown dataset '{dataset}'. Please choose either 'mnist', 'power', or 'hepmass'."

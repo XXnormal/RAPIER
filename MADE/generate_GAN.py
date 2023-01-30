@@ -9,19 +9,11 @@ import os
 from sklearn.datasets import make_blobs
 import math
 
-def main(white_type, black_type, TRAIN, multi, index, cuda_device):
-    print('generate_GAN', white_type, black_type, TRAIN, multi, index, cuda_device)
-    multi = float(multi)
+def main(feat_dir, model_dir, TRAIN, index, cuda_device):
 
-    root_dir = os.path.join('../data/', 'white_' + white_type + '_black_' + black_type, 'source')
-    model_dir = os.path.join(root_dir, 'model')
-    feat_dir = os.path.join(root_dir, 'feat')
-    made_dir = os.path.join(root_dir, 'made')
+    w = np.load(os.path.join(feat_dir, 'w_%s.npy'%(TRAIN)))
+    b = np.load(os.path.join(feat_dir, 'b_%s.npy'%(TRAIN)))
 
-    w = np.load(os.path.join(feat_dir, 'w_%s.npy'%(TRAIN)))[:, :-1]
-    b = np.load(os.path.join(feat_dir, 'b_%s.npy'%(TRAIN)))[:, :-1]
-
-    input_size = 2
     output_size = w.shape[1]
     hiddens = [8, 16]
     device = int(cuda_device) if cuda_device != 'None' else None
@@ -62,14 +54,10 @@ def main(white_type, black_type, TRAIN, multi, index, cuda_device):
         
         return np.array(gen_data)
 
-    gen_data_w = generate(train_type_w, WGenModel, int(w.shape[0] * multi), np.random.randint(1000))
-    gen_data_b1 = generate(train_type_w, BGenModel_1, int(b.shape[0] * multi), np.random.randint(1000))
-    gen_data_b2 = generate(train_type_b, BGenModel_2, int(b.shape[0] * multi), np.random.randint(1000))
+    gen_data_w = generate(train_type_w, WGenModel, int(w.shape[0]), np.random.randint(1000))
+    gen_data_b1 = generate(train_type_w, BGenModel_1, int(b.shape[0]), np.random.randint(1000))
+    gen_data_b2 = generate(train_type_b, BGenModel_2, int(b.shape[0]), np.random.randint(1000))
 
-    np.save(os.path.join(feat_dir, 'w_%s_generated_GAN_%.2f_%s.npy'%(TRAIN, multi, index)), gen_data_w)
-    np.save(os.path.join(feat_dir, 'b_%s_generated_GAN_1_%.2f_%s.npy'%(TRAIN, multi, index)), gen_data_b1)
-    np.save(os.path.join(feat_dir, 'b_%s_generated_GAN_2_%.2f_%s.npy'%(TRAIN, multi, index)), gen_data_b2)
-    
-if __name__ == '__main__':
-    _, white_type, black_type, TRAIN, multi, index, cuda_device = sys.argv
-    main(white_type, black_type, TRAIN, multi, index, cuda_device)
+    np.save(os.path.join(feat_dir, 'w_%s_generated_GAN_%s.npy'%(TRAIN, index)), gen_data_w)
+    np.save(os.path.join(feat_dir, 'b_%s_generated_GAN_1_%s.npy'%(TRAIN, index)), gen_data_b1)
+    np.save(os.path.join(feat_dir, 'b_%s_generated_GAN_2_%s.npy'%(TRAIN, index)), gen_data_b2)

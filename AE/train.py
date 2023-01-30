@@ -6,20 +6,25 @@ import sys
 import os
 
 batch_size = 128
-Max_epochs = 1000 # modeified
+Max_epochs = 1000
 
-def main(white_type, black_type, data_type, mode, device):
-    data_dir = os.path.join('../data', 'white_' + white_type + '_black_' + black_type, 'source/data')
-    model_dir = os.path.join('../data', 'white_' + white_type + '_black_' + black_type, 'source/model')
+def main(data_dir, model_dir, mode, device):
 
-    train_data = np.load(os.path.join(data_dir, data_type + '.npy'))[:, :50]
+    train_data_w = np.load(os.path.join(data_dir, 'w.npy'))
+    train_data_b = np.load(os.path.join(data_dir, 'b.npy'))
+
+    assert(train_data_w.shape[1] == train_data_b.shape[1])
+
+    train_data = np.concatenate([train_data_w, train_data_b], axis=0)
+    np.random.shuffle(train_data)
+    
     total_size, input_size = train_data.shape
-    max_epochs = Max_epochs * 200 // total_size
+    max_epochs = Max_epochs
+
     device_id = int(device)
-    print(device_id)
     torch.cuda.set_device(device_id)
     if mode == 'continue':
-        dagmm = torch.load(os.path.join(model_dir, 'ae_' + data_type + '.pkl'))
+        dagmm = torch.load(os.path.join(model_dir, 'gru_ae.pkl'))
         dagmm.to_cuda(device_id)
         dagmm = dagmm.cuda()
 
@@ -46,13 +51,10 @@ def main(white_type, black_type, data_type, mode, device):
             loss = dagmm.loss(torch.Tensor(input).long().cuda())
             loss.backward()
             optimizer.step()
-        print('epoch:', epoch, 'loss:', loss)
-        if (epoch + 1) % 50 == 0: # modified
-            dagmm.to_cpu()
-            dagmm = dagmm.cpu()
-            torch.save(dagmm, os.path.join(model_dir, 'ae_' + data_type + '.pkl'))
-            dagmm.to_cuda(device_id)
-            dagmm = dagmm.cuda()
+        
+    dagmm.to_cpu()
+    dagmm = dagmm.cpu()
+    torch.save(dagmm, os.path.join(model_dir, 'gru_ae.pkl'))
 
 if __name__ == '__main__':
     
