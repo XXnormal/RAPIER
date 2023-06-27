@@ -9,6 +9,7 @@ import os
 from sklearn.datasets import make_blobs
 import math
 
+# synthesize 3 types of samples.
 def main(feat_dir, model_dir, TRAIN, index, cuda_device):
 
     be = np.load(os.path.join(feat_dir, 'be_%s.npy'%(TRAIN)))[:, :32]

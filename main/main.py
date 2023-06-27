@@ -36,10 +36,10 @@ def main(data_dir, model_dir, feat_dir, made_dir, result_dir, cuda):
     MADE.get_clean_epochs.main(feat_dir, made_dir, '0.5', TRAIN)
     MADE.final_predict.main(feat_dir)
     
-    generate_cpus(feat_dir, model_dir, made_dir, list(range(1)), cuda)
+    generate_cpus(feat_dir, model_dir, made_dir, list(range(5)), cuda)
     
     TRAIN = 'corrected'
-    Classifier.classify.main(feat_dir, model_dir, result_dir, TRAIN, cuda, parallel=1)
+    Classifier.classify.main(feat_dir, model_dir, result_dir, TRAIN, cuda, parallel=5)
     
 if __name__ == '__main__':
     data_dir = '../data/data'
@@ -47,5 +47,5 @@ if __name__ == '__main__':
     model_dir= '../data/model'
     made_dir = '../data/made'
     result_dir='../data/result'
-    cuda = '0'
+    cuda = None
     main(data_dir, model_dir, feat_dir, made_dir, result_dir, cuda)

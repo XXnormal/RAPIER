@@ -6,6 +6,7 @@ from .utils.train import train_one_epoch_made
 from .utils.validation import val_made
 import os
 
+# train MADE
 def main(feat_dir, model_dir, TRAIN, DEVICE, MINLOSS):
 
     # --------- SET PARAMETERS ----------

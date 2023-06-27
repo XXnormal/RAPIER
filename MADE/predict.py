@@ -7,6 +7,7 @@ from .utils.test import test_made
 import sys
 import os
 
+# using MADE calculate each sample's density estimation
 def main(feat_dir, model_dir, made_dir, TRAIN, TEST, DEVICE):
 
     # --------- SET PARAMETERS ----------

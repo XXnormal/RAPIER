@@ -10,6 +10,7 @@ Max_epochs = 500
 
 def main(data_dir, model_dir, mode, device):
 
+    device = int(device) if device else None
     # get raw time-series data of training traffic data
     train_data_be = np.load(os.path.join(data_dir, 'be.npy'))
     train_data_ma = np.load(os.path.join(data_dir, 'ma.npy'))
@@ -22,24 +23,22 @@ def main(data_dir, model_dir, mode, device):
     total_size, input_size = train_data.shape
     max_epochs = Max_epochs
 
-    device_id = int(device)
-    torch.cuda.set_device(device_id)
-    if mode == 'continue':
-        dagmm = torch.load(os.path.join(model_dir, 'gru_ae.pkl'))
+    dagmm = LSTM_AE_GMM(
+        input_size=input_size,
+        max_len=2000,
+        emb_dim=32,
+        hidden_size=8,
+        dropout=0.2,
+        est_hidden_size=64,
+        est_output_size=8,
+        device=device
+    )
+    
+    if device:
+        device_id = int(device)
+        torch.cuda.set_device(device_id)
         dagmm.to_cuda(device_id)
         dagmm = dagmm.cuda()
-
-    else:
-        dagmm = LSTM_AE_GMM(
-            input_size=input_size,
-            max_len=2000,
-            emb_dim=32,
-            hidden_size=8,
-            dropout=0.2,
-            est_hidden_size=64,
-            est_output_size=8,
-            device=device_id,
-        ).cuda()
 
     dagmm.train_mode()
     optimizer = torch.optim.Adam(dagmm.parameters(), lr=1e-2)
@@ -50,7 +49,10 @@ def main(data_dir, model_dir, mode, device):
                 break
             optimizer.zero_grad()
             input = train_data[batch_size * batch : batch_size * (batch + 1)]
-            loss = dagmm.loss(torch.Tensor(input).long().cuda())
+            input = torch.Tensor(input).long()
+            if device:
+                input = input.cuda()
+            loss = dagmm.loss(input)
             loss.backward()
             optimizer.step()
             sum_loss += loss.detach().cpu().numpy()

@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
 
-# Loss functions
+# Loss functions - Co-teaching
 def loss_coteaching(y_1, y_2, t, forget_rate):
     loss_1 = F.cross_entropy(y_1, t, reduce = False)
     ind_1_sorted = np.argsort(loss_1.data.cpu())

@@ -8,6 +8,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
+# Using an Ensemble of ML to correct remaining samples label.
 def main(feat_dir):
 
     be_g = np.load(os.path.join(feat_dir, 'be_groundtruth.npy'))

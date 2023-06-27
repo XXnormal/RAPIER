@@ -34,7 +34,6 @@ def accuracy(logit, target):
 
 # Train the Model
 def train(train_loader, epoch, model1, optimizer1, model2, optimizer2, device):
-    # print('Training...')
     
     train_total1=0
     train_correct1=0 
@@ -43,7 +42,6 @@ def train(train_loader, epoch, model1, optimizer1, model2, optimizer2, device):
 
     for i, data_labels in enumerate(train_loader):
         
-        # Forward + Backward + Optimize
         feats = data_labels[:, :-1].to(dtype=torch.float32)
         labels = data_labels[:, -1].to(dtype=int)
         if device != None:
@@ -73,9 +71,8 @@ def train(train_loader, epoch, model1, optimizer1, model2, optimizer2, device):
     train_acc2=float(train_correct2)/float(train_total2)
     return train_acc1, train_acc2
 
-# Evaluate the Model
-# Test the Model
-def test(test_loader, model, device, alpha=0.5):
+# predict unknown traffic data's label
+def predict(test_loader, model, device, alpha=0.5):
 
     preds = []
     for i, data in enumerate(test_loader):
@@ -91,13 +88,12 @@ def test(test_loader, model, device, alpha=0.5):
         outputs = F.softmax(logits, dim=1)
         preds.append((outputs[:, 1] > alpha).detach().cpu().numpy())
 
-    #return test_acc, np.concatenate(right, axis=0), np.concatenate(wrong, axis=0)
     return np.concatenate(preds, axis=0)
 
 def main(feat_dir, model_dir, result_dir, TRAIN, cuda_device, parallel=5):
     
     cuda_device = int(cuda_device)
-
+    # get the origin training set
     be = np.load(os.path.join(feat_dir, 'be.npy'))[:, :32]
     ma = np.load(os.path.join(feat_dir, 'ma.npy'))[:, :32]
     be_shape = be.shape[0]
@@ -105,6 +101,7 @@ def main(feat_dir, model_dir, result_dir, TRAIN, cuda_device, parallel=5):
 
     for index in range(parallel):
 
+        # add synthesized traffic features into the origin training set
         be_gen = np.load(os.path.join(feat_dir, 'be_%s_generated_GAN_%d.npy' % (TRAIN, index)))
         ma_gen1 = np.load(os.path.join(feat_dir, 'ma_%s_generated_GAN_1_%d.npy' % (TRAIN, index)))
         ma_gen2 = np.load(os.path.join(feat_dir, 'ma_%s_generated_GAN_2_%d.npy' % (TRAIN, index)))
@@ -159,7 +156,7 @@ def main(feat_dir, model_dir, result_dir, TRAIN, cuda_device, parallel=5):
     mlp1.eval()
 
     test_loader = torch.utils.data.DataLoader(dataset=test_data, batch_size=batch_size, shuffle=False)
-    preds = test(test_loader, mlp1, device)
+    preds = predict(test_loader, mlp1, device)
     np.save(os.path.join(result_dir, 'prediction.npy'), preds)
 
     mlp1 = mlp1.cpu()

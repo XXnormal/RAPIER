@@ -9,6 +9,7 @@ import os
 from sklearn.datasets import make_blobs
 import math
 
+# train 3 GANs for data augmentation 
 def main(feat_dir, model_dir, made_dir, TRAIN, cuda_device):
 
     train_type_be = 'be_' + TRAIN
@@ -145,11 +146,14 @@ def main(feat_dir, model_dir, made_dir, TRAIN, cuda_device):
         GenModel = GenModel.cuda()
 
     for epoch in range(epochs):
-
+        # training Generator
+        
+        # random generate samples
         batch_be, H_be = Entropy(BeGenModel, batch_size, epoch * 378 + 1782)
         batch_ma1, H_ma1 = Entropy(MaGenModel_1, batch_size, epoch * 263 + 3467)
         batch_ma2, H_ma2 = Entropy(MaGenModel_2, batch_size, epoch * 255 + 3353)
         
+        # calculate samples' density
         NLogP_be_beMADE = get_NLogP(batch_be, BeMADE)
         NLogP_be_maMADE = get_NLogP((batch_be * be_std.cuda() + be_mean.cuda() - ma_mean.cuda()) / ma_std.cuda(), MaMADE)
         NLogP_ma1_beMADE = get_NLogP(batch_ma1, BeMADE)
@@ -157,6 +161,7 @@ def main(feat_dir, model_dir, made_dir, TRAIN, cuda_device):
         NLogP_ma2_beMADE = get_NLogP((batch_ma2 * ma_std.cuda() + ma_mean.cuda() - be_mean.cuda()) / be_std.cuda(), BeMADE)
         NLogP_ma2_maMADE = get_NLogP(batch_ma2, MaMADE)
         
+        # loss function for MB
         E1_ma1 = -torch.mean(NLogP_ma1_beMADE * NLogP_ma1_maMADE.ge(ma_max) * NLogP_ma1_beMADE.lt(be_min))
         E2_ma1 =  torch.mean(NLogP_ma1_beMADE * NLogP_ma1_maMADE.ge(ma_max) * NLogP_ma1_beMADE.gt(be_max))
         E3_ma1 = -torch.mean(NLogP_ma1_maMADE * NLogP_ma1_maMADE.lt(ma_max))
@@ -166,6 +171,7 @@ def main(feat_dir, model_dir, made_dir, TRAIN, cuda_device):
         )
         loss_ma1 = H_ma1 + E1_ma1 + E2_ma1 + E3_ma1 + fm_ma1
 
+        # loss function for MO
         E1_ma2 = -torch.mean(NLogP_ma2_maMADE * NLogP_ma2_beMADE.ge(be_max) * NLogP_ma2_maMADE.lt(ma_max))
         E2_ma2 = -torch.mean(NLogP_ma2_beMADE * NLogP_ma2_beMADE.lt(be_max))
         fm_ma2 = torch.linalg.norm(
@@ -174,6 +180,7 @@ def main(feat_dir, model_dir, made_dir, TRAIN, cuda_device):
         )
         loss_ma2 = H_ma2 + E1_ma2 + E2_ma2 + fm_ma2
 
+        # loss function for NB
         E1_be = -torch.mean(NLogP_be_beMADE * NLogP_be_maMADE.ge(ma_max) * NLogP_be_beMADE.lt(be_MIN))
         E2_be =  torch.mean(NLogP_be_beMADE * NLogP_be_maMADE.ge(ma_max) * NLogP_be_beMADE.gt(be_MAX))
         E3_be = -torch.mean(NLogP_be_maMADE * NLogP_be_maMADE.lt(ma_max))
@@ -198,6 +205,8 @@ def main(feat_dir, model_dir, made_dir, TRAIN, cuda_device):
         optimizer_ma2.step()
 
         if epoch % 10 == 9:
+            # training discriminator
+            
             save_model(BeGenModel, save_name_be)
             save_model(MaGenModel_1, save_name_ma1)
             save_model(MaGenModel_2, save_name_ma2)
@@ -225,6 +234,7 @@ def main(feat_dir, model_dir, made_dir, TRAIN, cuda_device):
                 D_Gbe = F.softmax(D(Gbe), dim=1)[:, 0]
                 E6_D = torch.mean(torch.log(D_Gbe + reminder * D_Gbe.lt(reminder)))
                 
+                # loss for D
                 loss_D = E1_D + E2_D + E3_D + E4_D + E5_D + E6_D
 
                 optimizer_D.zero_grad()

@@ -9,6 +9,7 @@ import os
 from .predict_epochs import predict_epochs
 import re
 
+# train MADE and record the losses during the training process
 def main(feat_dir, model_dir, made_dir, TRAIN, DEVICE, MINLOSS):
 
     # --------- SET PARAMETERS ----------
