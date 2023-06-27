@@ -22,7 +22,7 @@ class MyDataset:
 
 def load_data(root_path, is_train):
 
-    data = np.load(root_path)
+    data = np.load(root_path)[:, :32]
     
     if is_train is True:
         N_validate = int(0.1 * data.shape[0])

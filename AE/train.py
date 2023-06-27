@@ -6,16 +6,17 @@ import sys
 import os
 
 batch_size = 128
-Max_epochs = 1000
+Max_epochs = 500
 
 def main(data_dir, model_dir, mode, device):
 
-    train_data_w = np.load(os.path.join(data_dir, 'w.npy'))
-    train_data_b = np.load(os.path.join(data_dir, 'b.npy'))
+    # get raw time-series data of training traffic data
+    train_data_be = np.load(os.path.join(data_dir, 'be.npy'))
+    train_data_ma = np.load(os.path.join(data_dir, 'ma.npy'))
+    
+    assert(train_data_be.shape[1] == 51 and train_data_ma.shape[1] == 51)
 
-    assert(train_data_w.shape[1] == train_data_b.shape[1])
-
-    train_data = np.concatenate([train_data_w, train_data_b], axis=0)
+    train_data = np.concatenate([train_data_be[:, :50], train_data_ma[:, :50]], axis=0)
     np.random.shuffle(train_data)
     
     total_size, input_size = train_data.shape
@@ -43,6 +44,7 @@ def main(data_dir, model_dir, mode, device):
     dagmm.train_mode()
     optimizer = torch.optim.Adam(dagmm.parameters(), lr=1e-2)
     for epoch in range(max_epochs):
+        sum_loss = 0
         for batch in range(total_size // batch_size + 1):
             if batch * batch_size >= total_size:
                 break
@@ -51,12 +53,9 @@ def main(data_dir, model_dir, mode, device):
             loss = dagmm.loss(torch.Tensor(input).long().cuda())
             loss.backward()
             optimizer.step()
+            sum_loss += loss.detach().cpu().numpy()
+        print('epoch:', epoch, 'loss:', sum_loss)
         
     dagmm.to_cpu()
     dagmm = dagmm.cpu()
     torch.save(dagmm, os.path.join(model_dir, 'gru_ae.pkl'))
-
-if __name__ == '__main__':
-    
-    _, white_type, black_type, data_type, mode, device = sys.argv
-    main(white_type, black_type, data_type, mode, device)

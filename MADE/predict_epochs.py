@@ -42,6 +42,6 @@ def predict_epochs(feat_dir, model_dir, made_dir, TRAIN, TEST, DEVICE, epoch):
 
     neglogP = test_made(model, test_loader, cuda_device)
 
-    with open(os.path.join(made_dir, test_type + '_in_' + train_type + '_' + str(epoch)), 'w') as fp:
+    with open(os.path.join(made_dir, '%s_%sMADE_%d'%(test_type, train_type, epoch)), 'w') as fp:
         for neglogp in neglogP:
             fp.write(str(float(neglogp)) + '\n')

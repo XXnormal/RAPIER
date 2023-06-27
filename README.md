@@ -33,9 +33,11 @@ The argument can be modified in `main.py` are:
 * `result_dir: ` The directory of the detection/prediction result of the test data.
 
 The required input files:
-* `{data_dir}/{w.npy}: ` The white (benign) preprocessed training data.
-* `{data_dir}/{b.npy}: ` The black (malicious) preprocessed training data.
+* `{data_dir}/{benign.npy}: ` The benign preprocessed training data. 
+* `{data_dir}/{malicious.npy}: ` The malicious preprocessed training data.
 * `{data_dir}/{test.npy}: ` The preprocessed testing data.
+
+All data in `{data_dir}` should have dimensions of (*n*, 51), where *n* is the number of samples. Each sample is a 51-dimension vector, where first 50 dimensions are time-series data of traffic and the last one is the true-label for the sample (used to evaluate the accuracy).
 
 Output:
 * `{result_dir}/{prediction.npy}: ` The prediction of all testing data. `1` is malicious and `0` is benign.

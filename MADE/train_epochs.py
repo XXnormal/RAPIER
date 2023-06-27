@@ -28,13 +28,10 @@ def main(feat_dir, model_dir, made_dir, TRAIN, DEVICE, MINLOSS):
     # -----------------------------------
 
     for filename in os.listdir(made_dir):
-        if re.match('w' + str(TRAIN)[1:] + '_in_' + str(TRAIN) + '_\d+', filename):
-            os.system('rm ' + os.path.join(made_dir, filename))
-        if re.match('b' + str(TRAIN)[1:] + '_in_' + str(TRAIN) + '_\d+', filename):
-            os.system('rm ' + os.path.join(made_dir, filename))
+        os.system('rm ' + os.path.join(made_dir, filename))
             
     # Get dataset.=
-    data = get_data(dataset_name, feat_dir, train_type, train_type, True)
+    data = get_data(dataset_name, feat_dir, train_type, train_type)
     train = torch.from_numpy(data.train.x)
     # Get data loaders.
     train_loader, val_loader, test_loader = get_data_loaders(data, batch_size)
@@ -75,8 +72,8 @@ def main(feat_dir, model_dir, made_dir, TRAIN, DEVICE, MINLOSS):
             if cuda_device != None:
                 model = model.cuda()
 
-            predict_epochs(feat_dir, model_dir, made_dir, TRAIN, 'w', DEVICE, epoch)
-            predict_epochs(feat_dir, model_dir, made_dir, TRAIN, 'b', DEVICE, epoch)
+            predict_epochs(feat_dir, model_dir, made_dir, TRAIN, 'be', DEVICE, epoch)
+            predict_epochs(feat_dir, model_dir, made_dir, TRAIN, 'ma', DEVICE, epoch)
 
         # Early stopping. Save model on each epoch with improvement.
         if val_loss < max_loss and train_loss > min_loss:

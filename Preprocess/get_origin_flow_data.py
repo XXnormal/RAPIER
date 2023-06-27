@@ -16,10 +16,8 @@ def get_feat(file):
             if i >= len(sq):
                 feat.append(0)
             else:
-                length = int(sq[i]) - (0 if i == 0 else int(sq[i - 1]))
-                if length <= 0:
-                    feat.append(1)
-                elif length >= 2000:
+                length = abs(int(sq[i]) - (0 if i == 0 else int(sq[i - 1])))
+                if length >= 2000:
                     feat.append(1999)
                 else:
                     feat.append(length)

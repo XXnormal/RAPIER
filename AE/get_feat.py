@@ -10,7 +10,11 @@ batch_size = 128
 
 def main(data_dir, model_dir, feat_dir, data_type, device):
 
-    test_data = np.load(os.path.join(data_dir, data_type + '.npy'))
+    test_data_label = np.load(os.path.join(data_dir, data_type + '.npy'))
+    assert(test_data_label.shape[1] == 51)
+    
+    test_data = test_data_label[:, :50]
+    test_label = test_data[:, -1]
     
     total_size, _ = test_data.shape
 
@@ -27,11 +31,10 @@ def main(data_dir, model_dir, feat_dir, data_type, device):
             break
         input = test_data[batch_size * batch : batch_size * (batch + 1)]
         output = dagmm.feature(torch.Tensor(input).long().cuda())
-        feature.append(output.detach().cpu())
+        feature.append(output.detach().cpu().numpy())
 
-    feature = torch.cat(feature, dim=0).numpy()
+    feature = np.concatenate(feature, axis=0)
+    assert(feature.shape[0] == test_label.shape[0])
+    feature = np.concatenate([feature, test_label[:, None]], axis=1)
     np.save(os.path.join(feat_dir, data_type + '.npy'), feature)
-
-if __name__ == '__main__':
-    _, white_type, black_type, model_type, data_type, device = sys.argv
-    main(white_type, black_type, model_type, data_type, device)
+    print(feature.shape)

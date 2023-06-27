@@ -11,13 +11,13 @@ import math
 
 def main(feat_dir, model_dir, made_dir, TRAIN, cuda_device):
 
-    train_type_w = 'w_' + TRAIN
-    train_type_b = 'b_' + TRAIN
-    w = np.load(os.path.join(feat_dir, train_type_w + '.npy'))
-    b = np.load(os.path.join(feat_dir, train_type_b + '.npy'))
+    train_type_be = 'be_' + TRAIN
+    train_type_ma = 'ma_' + TRAIN
+    be = np.load(os.path.join(feat_dir, train_type_be + '.npy'))[:, :32]
+    ma = np.load(os.path.join(feat_dir, train_type_ma + '.npy'))[:, :32]
 
     input_size = 2
-    output_size = w.shape[1]
+    output_size = be.shape[1]
     hiddens = [8, 16]
     device = int(cuda_device) if cuda_device != 'None' else None
     model_name = 'made' # 'MAF' or 'MADE'
@@ -27,74 +27,74 @@ def main(feat_dir, model_dir, made_dir, TRAIN, cuda_device):
     epochs = 500 # Modified
     lr = 5e-3
 
-    load_name_w = f"{model_name}_{dataset_name}_{train_type_w}_{'_'.join(str(d) for d in hidden_dims)}.pt"
-    load_name_b = f"{model_name}_{dataset_name}_{train_type_b}_{'_'.join(str(d) for d in hidden_dims)}.pt"
-    save_name_w = f"gen_GAN_{train_type_w}_{'_'.join(str(d) for d in hiddens)}.pt"
-    save_name_b1 = f"gen1_GAN_{train_type_b}_{'_'.join(str(d) for d in hiddens)}.pt"
-    save_name_b2 = f"gen2_GAN_{train_type_b}_{'_'.join(str(d) for d in hiddens)}.pt"
+    load_name_be = f"{model_name}_{dataset_name}_{train_type_be}_{'_'.join(str(d) for d in hidden_dims)}.pt"
+    load_name_ma = f"{model_name}_{dataset_name}_{train_type_ma}_{'_'.join(str(d) for d in hidden_dims)}.pt"
+    save_name_be = f"gen_GAN_{train_type_be}_{'_'.join(str(d) for d in hiddens)}.pt"
+    save_name_ma1 = f"gen1_GAN_{train_type_ma}_{'_'.join(str(d) for d in hiddens)}.pt"
+    save_name_ma2 = f"gen2_GAN_{train_type_ma}_{'_'.join(str(d) for d in hiddens)}.pt"
 
-    NLogP_w = []
-    NLogP_b = []
-    NLogP_w_sort = []
-    NLogP_b_sort = []
+    NLogP_be = []
+    NLogP_ma = []
+    NLogP_be_sort = []
+    NLogP_ma_sort = []
 
-    with open(os.path.join(made_dir, train_type_w + '_in_' + train_type_w), 'r') as fp:
+    with open(os.path.join(made_dir, '%s_%sMADE'%(train_type_be, train_type_be)), 'r') as fp:
         for line in fp:
             s = float(line.strip())
-            NLogP_w.append(s)
-            NLogP_w_sort.append(s)
+            NLogP_be.append(s)
+            NLogP_be_sort.append(s)
 
-    with open(os.path.join(made_dir, train_type_b + '_in_' + train_type_b), 'r') as fp:
+    with open(os.path.join(made_dir, '%s_%sMADE'%(train_type_ma, train_type_ma)), 'r') as fp:
         for line in fp:
             s = float(line.strip())
-            NLogP_b.append(s)
-            NLogP_b_sort.append(s)
+            NLogP_ma.append(s)
+            NLogP_ma_sort.append(s)
 
-    NLogP_w_sort.sort()
-    NLogP_b_sort.sort()
-    NLogP_w = np.array(NLogP_w)
-    NLogP_b = np.array(NLogP_b)
+    NLogP_be_sort.sort()
+    NLogP_ma_sort.sort()
+    NLogP_be = np.array(NLogP_be)
+    NLogP_ma = np.array(NLogP_ma)
 
-    w_MIN_ratio = 0.7
-    w_MAX_ratio = 0.8
-    w_min_ratio = 0.8
-    w_max_ratio = 0.9
-    b_max_ratio = 0.95
+    be_MIN_ratio = 0.7
+    be_MAX_ratio = 0.8
+    be_min_ratio = 0.8
+    be_max_ratio = 0.9
+    ma_max_ratio = 0.95
 
-    w_MIN = NLogP_w_sort[int(w_MIN_ratio * len(NLogP_w))]
-    w_MAX = NLogP_w_sort[int(w_MAX_ratio * len(NLogP_w))]
-    w_min = NLogP_w_sort[int(w_min_ratio * len(NLogP_w))]
-    w_max = NLogP_w_sort[int(w_max_ratio * len(NLogP_w))]
-    b_max = NLogP_b_sort[int(b_max_ratio * len(NLogP_b))]
+    be_MIN = NLogP_be_sort[int(be_MIN_ratio * len(NLogP_be))]
+    be_MAX = NLogP_be_sort[int(be_MAX_ratio * len(NLogP_be))]
+    be_min = NLogP_be_sort[int(be_min_ratio * len(NLogP_be))]
+    be_max = NLogP_be_sort[int(be_max_ratio * len(NLogP_be))]
+    ma_max = NLogP_ma_sort[int(ma_max_ratio * len(NLogP_ma))]
 
-    BGenModel_1 = GEN(input_size, hiddens, output_size, device)
+    MaGenModel_1 = GEN(input_size, hiddens, output_size, device)
     if device != None:
         torch.cuda.set_device(device)
-        BGenModel_1 = BGenModel_1.cuda()
+        MaGenModel_1 = MaGenModel_1.cuda()
 
-    BGenModel_2 = GEN(input_size, hiddens, output_size, device)
+    MaGenModel_2 = GEN(input_size, hiddens, output_size, device)
     if device != None:
         torch.cuda.set_device(device)
-        BGenModel_2 = BGenModel_2.cuda()
+        MaGenModel_2 = MaGenModel_2.cuda()
 
-    WGenModel = GEN(input_size, hiddens, output_size, device)
+    BeGenModel = GEN(input_size, hiddens, output_size, device)
     if device != None:
         torch.cuda.set_device(device)
-        WGenModel = WGenModel.cuda()
+        BeGenModel = BeGenModel.cuda()
 
-    WMADE = torch.load(os.path.join(model_dir, load_name_w))
+    BeMADE = torch.load(os.path.join(model_dir, load_name_be))
     if device != None:
         torch.cuda.set_device(device)
-        WMADE = WMADE.cuda()
+        BeMADE = BeMADE.cuda()
         
-    BMADE = torch.load(os.path.join(model_dir, load_name_b))
+    MaMADE = torch.load(os.path.join(model_dir, load_name_ma))
     if device != None:
         torch.cuda.set_device(device)
-        BMADE = BMADE.cuda()
+        MaMADE = MaMADE.cuda()
 
-    optimizer_w = torch.optim.Adam(WGenModel.parameters(), lr=lr, weight_decay=1e-6)
-    optimizer_b1 = torch.optim.Adam(BGenModel_1.parameters(), lr=lr, weight_decay=1e-6)
-    optimizer_b2 = torch.optim.Adam(BGenModel_2.parameters(), lr=lr, weight_decay=1e-6)
+    optimizer_be = torch.optim.Adam(BeGenModel.parameters(), lr=lr, weight_decay=1e-6)
+    optimizer_ma1 = torch.optim.Adam(MaGenModel_1.parameters(), lr=lr, weight_decay=1e-6)
+    optimizer_ma2 = torch.optim.Adam(MaGenModel_2.parameters(), lr=lr, weight_decay=1e-6)
 
     D = MLP(input_size=output_size, hiddens=[16, 8], output_size=2, device=device)
     if device != None:
@@ -103,19 +103,18 @@ def main(feat_dir, model_dir, made_dir, TRAIN, cuda_device):
     optimizer_D = torch.optim.Adam(D.parameters(), lr=lr)
     save_name_D = f"dis_{'_'.join(str(d) for d in hiddens)}.pt"
 
-    print(w.shape, b.shape)
+    be_mean = torch.Tensor(np.mean(be, axis=0))
+    be_std = torch.Tensor(np.std(be, axis=0))
+    ma_mean = torch.Tensor(np.mean(ma, axis=0))
+    ma_std = torch.Tensor(np.std(ma, axis=0))
 
-    w_mean = torch.Tensor(np.mean(w, axis=0))
-    w_std = torch.Tensor(np.std(w, axis=0))
-    b_mean = torch.Tensor(np.mean(b, axis=0))
-    b_std = torch.Tensor(np.std(b, axis=0))
+    be = torch.Tensor(be)
+    ma = torch.Tensor(ma)
 
-    w = torch.Tensor(w)
-    b = torch.Tensor(b)
-
-    w_in_MINMAX = w[(NLogP_w - w_MAX) * (NLogP_w - w_MIN) < 0]
-    w_in_minmax = w[(NLogP_w - w_max) * (NLogP_w - w_min) < 0]
-    b_in_minmax = b[NLogP_b > b_max]
+    print(be.shape, NLogP_be.shape)
+    be_in_MINMAX = be[(NLogP_be - be_MAX) * (NLogP_be - be_MIN) < 0]
+    be_in_minmax = be[(NLogP_be - be_max) * (NLogP_be - be_min) < 0]
+    ma_in_minmax = ma[NLogP_ma > ma_max]
 
     def Entropy(GenModel, batch_size, seed):
         X, _ = make_blobs(n_samples=batch_size, centers=[[0, 0]], n_features=2, random_state=seed)
@@ -145,130 +144,86 @@ def main(feat_dir, model_dir, made_dir, TRAIN, cuda_device):
         GenModel.to_cuda(device)
         GenModel = GenModel.cuda()
 
-    #  二分类mlp + 概率校正 构建 pb 函数
-    def accuracy(logit, target):
-        """Computes the precision@k for the specified values of k"""
-        output = F.softmax(logit, dim=1)
-        batch_size = target.size(0)
-
-        _, pred = output.topk(1, 1, True, True)
-        pred = pred.t()
-        correct = pred.eq(target.view(1, -1).expand_as(pred))
-
-        correct_k = correct[:1].view(-1).float().sum(0, keepdim=True)
-        return correct_k.mul_(100.0 / batch_size)
-
-    def train_mlp(train_loader, epoch, model, optimizer):
-        train_total = 0
-        train_correct = 0
-
-        for i, data_labels in enumerate(train_loader):
-
-            # Forward + Backward + Optimize
-            feats = data_labels[:, :-1].to(dtype=torch.float32)
-            labels = data_labels[:, -1].to(dtype=int)
-
-            if device != None:
-                torch.cuda.set_device(device)
-                feats = feats.cuda()
-                labels = labels.cuda()
-
-            logits = model(feats)
-            prec = accuracy(logits, labels)
-            train_total += 1
-            train_correct += prec
-
-            loss = F.cross_entropy(logits, labels)
-
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
-        train_acc = float(train_correct) / float(train_total)
-        return train_acc
-
     for epoch in range(epochs):
 
-        batch_w, H_w = Entropy(WGenModel, batch_size, epoch * 378 + 1782)
-        batch_b1, H_b1 = Entropy(BGenModel_1, batch_size, epoch * 263 + 3467)
-        batch_b2, H_b2 = Entropy(BGenModel_2, batch_size, epoch * 255 + 3353)
+        batch_be, H_be = Entropy(BeGenModel, batch_size, epoch * 378 + 1782)
+        batch_ma1, H_ma1 = Entropy(MaGenModel_1, batch_size, epoch * 263 + 3467)
+        batch_ma2, H_ma2 = Entropy(MaGenModel_2, batch_size, epoch * 255 + 3353)
         
-        NLogP_ww = get_NLogP(batch_w, WMADE)
-        NLogP_wb = get_NLogP((batch_w * w_std.cuda() + w_mean.cuda() - b_mean.cuda()) / b_std.cuda(), BMADE)
-        NLogP_b1w = get_NLogP(batch_b1, WMADE)
-        NLogP_b1b = get_NLogP((batch_b1 * w_std.cuda() + w_mean.cuda() - b_mean.cuda()) / b_std.cuda(), BMADE)
-        NLogP_b2w = get_NLogP((batch_b2 * b_std.cuda() + b_mean.cuda() - w_mean.cuda()) / w_std.cuda(), WMADE)
-        NLogP_b2b = get_NLogP(batch_b2, BMADE)
+        NLogP_be_beMADE = get_NLogP(batch_be, BeMADE)
+        NLogP_be_maMADE = get_NLogP((batch_be * be_std.cuda() + be_mean.cuda() - ma_mean.cuda()) / ma_std.cuda(), MaMADE)
+        NLogP_ma1_beMADE = get_NLogP(batch_ma1, BeMADE)
+        NLogP_ma1_maMADE = get_NLogP((batch_ma1 * be_std.cuda() + be_mean.cuda() - ma_mean.cuda()) / ma_std.cuda(), MaMADE)
+        NLogP_ma2_beMADE = get_NLogP((batch_ma2 * ma_std.cuda() + ma_mean.cuda() - be_mean.cuda()) / be_std.cuda(), BeMADE)
+        NLogP_ma2_maMADE = get_NLogP(batch_ma2, MaMADE)
         
-        E1_b1 = -torch.mean(NLogP_b1w * NLogP_b1b.ge(b_max) * NLogP_b1w.lt(w_min))
-        E2_b1 =  torch.mean(NLogP_b1w * NLogP_b1b.ge(b_max) * NLogP_b1w.gt(w_max))
-        E3_b1 = -torch.mean(NLogP_b1b * NLogP_b1b.lt(b_max))
-        fm_b1 = torch.linalg.norm(
-            torch.mean(D.f(batch_b1 * w_std.cuda() + w_mean.cuda())) - 
-            torch.mean(D.f(w_in_minmax))
+        E1_ma1 = -torch.mean(NLogP_ma1_beMADE * NLogP_ma1_maMADE.ge(ma_max) * NLogP_ma1_beMADE.lt(be_min))
+        E2_ma1 =  torch.mean(NLogP_ma1_beMADE * NLogP_ma1_maMADE.ge(ma_max) * NLogP_ma1_beMADE.gt(be_max))
+        E3_ma1 = -torch.mean(NLogP_ma1_maMADE * NLogP_ma1_maMADE.lt(ma_max))
+        fm_ma1 = torch.linalg.norm(
+            torch.mean(D.f(batch_ma1 * be_std.cuda() + be_mean.cuda())) - 
+            torch.mean(D.f(be_in_minmax))
         )
-        loss_b1 = H_b1 + E1_b1 + E2_b1 + E3_b1 + fm_b1
+        loss_ma1 = H_ma1 + E1_ma1 + E2_ma1 + E3_ma1 + fm_ma1
 
-        E1_b2 = -torch.mean(NLogP_b2b * NLogP_b2w.ge(w_max) * NLogP_b2b.lt(b_max))
-        E2_b2 = -torch.mean(NLogP_b2w * NLogP_b2w.lt(w_max))
-        fm_b2 = torch.linalg.norm(
-            torch.mean(D.f(batch_b2 * b_std.cuda() + b_mean.cuda())) - 
-            torch.mean(D.f(b_in_minmax))
+        E1_ma2 = -torch.mean(NLogP_ma2_maMADE * NLogP_ma2_beMADE.ge(be_max) * NLogP_ma2_maMADE.lt(ma_max))
+        E2_ma2 = -torch.mean(NLogP_ma2_beMADE * NLogP_ma2_beMADE.lt(be_max))
+        fm_ma2 = torch.linalg.norm(
+            torch.mean(D.f(batch_ma2 * ma_std.cuda() + ma_mean.cuda())) - 
+            torch.mean(D.f(ma_in_minmax))
         )
-        loss_b2 = H_b2 + E1_b2 + E2_b2 + fm_b2
+        loss_ma2 = H_ma2 + E1_ma2 + E2_ma2 + fm_ma2
 
-        E1_w = -torch.mean(NLogP_ww * NLogP_wb.ge(b_max) * NLogP_ww.lt(w_MIN))
-        E2_w =  torch.mean(NLogP_ww * NLogP_wb.ge(b_max) * NLogP_ww.gt(w_MAX))
-        E3_w = -torch.mean(NLogP_wb * NLogP_wb.lt(b_max))
-        fm_w = torch.linalg.norm(
-            torch.mean(D.f(batch_w * w_std.cuda() + w_mean.cuda())) - 
-            torch.mean(D.f(w_in_MINMAX))
+        E1_be = -torch.mean(NLogP_be_beMADE * NLogP_be_maMADE.ge(ma_max) * NLogP_be_beMADE.lt(be_MIN))
+        E2_be =  torch.mean(NLogP_be_beMADE * NLogP_be_maMADE.ge(ma_max) * NLogP_be_beMADE.gt(be_MAX))
+        E3_be = -torch.mean(NLogP_be_maMADE * NLogP_be_maMADE.lt(ma_max))
+        fm_be = torch.linalg.norm(
+            torch.mean(D.f(batch_be * be_std.cuda() + be_mean.cuda())) - 
+            torch.mean(D.f(be_in_MINMAX))
         )
-        loss_w = H_w + E1_w + E2_w + E3_w + fm_w
+        loss_be = H_be + E1_be + E2_be + E3_be + fm_be
 
-        print('epoch: %d, loss_w: %5f, loss_b1: %5f, loss_b2: %5f' % (epoch, loss_w, loss_b1, loss_b2))
+        print('epoch: %d, loss_be: %5f, loss_ma1: %5f, loss_ma2: %5f' % (epoch, loss_be, loss_ma1, loss_ma2))
 
-        optimizer_w.zero_grad()
-        loss_w.backward()
-        optimizer_w.step()
+        optimizer_be.zero_grad()
+        loss_be.backward()
+        optimizer_be.step()
 
-        optimizer_b1.zero_grad()
-        loss_b1.backward()
-        optimizer_b1.step()
+        optimizer_ma1.zero_grad()
+        loss_ma1.backward()
+        optimizer_ma1.step()
 
-        optimizer_b2.zero_grad()
-        loss_b2.backward()
-        optimizer_b2.step()
+        optimizer_ma2.zero_grad()
+        loss_ma2.backward()
+        optimizer_ma2.step()
 
         if epoch % 10 == 9:
-            save_model(WGenModel, save_name_w)
-            save_model(BGenModel_1, save_name_b1)
-            save_model(BGenModel_2, save_name_b2)
+            save_model(BeGenModel, save_name_be)
+            save_model(MaGenModel_1, save_name_ma1)
+            save_model(MaGenModel_2, save_name_ma2)
             
-            accs_ori = []
-            accs_gen = []
             reminder = 1e-3
             for epoch_D in range(10):
-                Gw, Hw = Entropy(WGenModel, batch_size, epoch * 356 + 32342)
-                Gb1, Hb1 = Entropy(BGenModel_1, batch_size, epoch * 356 + 32142)
-                Gb2, Hb2 = Entropy(BGenModel_2, batch_size, epoch * 242 + 24279)
+                Gbe, Hbe = Entropy(BeGenModel, batch_size, epoch * 356 + 32342)
+                Gma1, Hma1 = Entropy(MaGenModel_1, batch_size, epoch * 356 + 32142)
+                Gma2, Hma2 = Entropy(MaGenModel_2, batch_size, epoch * 242 + 24279)
                 
-                D_w = F.softmax(D(w), dim=1)[:, 0]
-                E1_D = torch.mean(torch.log(D_w + reminder * D_w.lt(reminder)))
+                D_be = F.softmax(D(be), dim=1)[:, 0]
+                E1_D = torch.mean(torch.log(D_be + reminder * D_be.lt(reminder)))
                 
-                D_Gb1 = F.softmax(D(Gb1), dim=1)[:, 0]
-                E2_D = torch.mean(torch.log(1 - D_Gb1 + reminder * (1 - D_Gb1).lt(reminder)))
+                D_Gma1 = F.softmax(D(Gma1), dim=1)[:, 0]
+                E2_D = torch.mean(torch.log(1 - D_Gma1 + reminder * (1 - D_Gma1).lt(reminder)))
 
-                D_Gb2 = F.softmax(D(Gb2), dim=1)[:, 0]
-                E3_D = torch.mean(torch.log(1 - D_Gb2 + reminder * (1 - D_Gb2).lt(reminder)))
+                D_Gma2 = F.softmax(D(Gma2), dim=1)[:, 0]
+                E3_D = torch.mean(torch.log(1 - D_Gma2 + reminder * (1 - D_Gma2).lt(reminder)))
 
-                E4_D = torch.mean(D_w * torch.log(D_w + reminder * D_w.lt(reminder)))
+                E4_D = torch.mean(D_be * torch.log(D_be + reminder * D_be.lt(reminder)))
 
-                D_b = F.softmax(D(b), dim=1)[:, 0]
-                E5_D = torch.mean(torch.log(1 - D_b + reminder * (1 - D_b).lt(reminder)))
+                D_ma = F.softmax(D(ma), dim=1)[:, 0]
+                E5_D = torch.mean(torch.log(1 - D_ma + reminder * (1 - D_ma).lt(reminder)))
 
-                D_Gw = F.softmax(D(Gw), dim=1)[:, 0]
-                E6_D = torch.mean(torch.log(D_Gw + reminder * D_Gw.lt(reminder)))
+                D_Gbe = F.softmax(D(Gbe), dim=1)[:, 0]
+                E6_D = torch.mean(torch.log(D_Gbe + reminder * D_Gbe.lt(reminder)))
                 
                 loss_D = E1_D + E2_D + E3_D + E4_D + E5_D + E6_D
 

@@ -86,7 +86,6 @@ def test(test_loader, model, device, alpha=0.5):
         if device != None:
             torch.cuda.set_device(device)
             feats = feats.cuda()
-            labels = labels.cuda()
         
         logits = model(feats)
         outputs = F.softmax(logits, dim=1)
@@ -99,35 +98,35 @@ def main(feat_dir, model_dir, result_dir, TRAIN, cuda_device, parallel=5):
     
     cuda_device = int(cuda_device)
 
-    w = np.load(os.path.join(feat_dir, 'w.npy'))
-    b = np.load(os.path.join(feat_dir, 'b.npy'))
-    wshape = w.shape[0]
-    bshape = b.shape[0]
+    be = np.load(os.path.join(feat_dir, 'be.npy'))[:, :32]
+    ma = np.load(os.path.join(feat_dir, 'ma.npy'))[:, :32]
+    be_shape = be.shape[0]
+    ma_shape = ma.shape[0]
 
     for index in range(parallel):
 
-        w_gen = np.load(os.path.join(feat_dir, 'w_%s_generated_GAN_%d.npy' % (TRAIN, index)))
-        b_gen1 = np.load(os.path.join(feat_dir, 'b_%s_generated_GAN_1_%d.npy' % (TRAIN, index)))
-        b_gen2 = np.load(os.path.join(feat_dir, 'b_%s_generated_GAN_2_%d.npy' % (TRAIN, index)))
-        np.random.shuffle(w_gen)
-        np.random.shuffle(b_gen1)
-        np.random.shuffle(b_gen2)
-        w = np.concatenate([
-            w, 
-            w_gen[:wshape // (parallel)], 
+        be_gen = np.load(os.path.join(feat_dir, 'be_%s_generated_GAN_%d.npy' % (TRAIN, index)))
+        ma_gen1 = np.load(os.path.join(feat_dir, 'ma_%s_generated_GAN_1_%d.npy' % (TRAIN, index)))
+        ma_gen2 = np.load(os.path.join(feat_dir, 'ma_%s_generated_GAN_2_%d.npy' % (TRAIN, index)))
+        np.random.shuffle(be_gen)
+        np.random.shuffle(ma_gen1)
+        np.random.shuffle(ma_gen2)
+        be = np.concatenate([
+            be, 
+            be_gen[:be_shape // (parallel)], 
         ], axis=0)
         
-        b = np.concatenate([
-            b,
-            b_gen1[:bshape // (parallel)],
-            b_gen2[:bshape // (parallel)],
+        ma = np.concatenate([
+            ma,
+            ma_gen1[:ma_shape // (parallel)],
+            ma_gen2[:ma_shape // (parallel)],
         ], axis=0)
 
-    train_data = np.concatenate([w, b], axis=0)
-    train_label = np.concatenate([np.zeros(w.shape[0]), np.ones(b.shape[0])], axis=0)
+    train_data = np.concatenate([be, ma], axis=0)
+    train_label = np.concatenate([np.zeros(be.shape[0]), np.ones(ma.shape[0])], axis=0)
     train_dataset = np.concatenate((train_data, train_label[:, None]), axis=1)
 
-    test_data = np.load(os.path.join(feat_dir, 'test.npy'))
+    test_data = np.load(os.path.join(feat_dir, 'test.npy'))[:, :32]
 
     device = int(cuda_device) if cuda_device != 'None' else None
     # define drop rate schedule

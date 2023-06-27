@@ -11,30 +11,30 @@ import math
 
 def main(feat_dir, model_dir, TRAIN, index, cuda_device):
 
-    w = np.load(os.path.join(feat_dir, 'w_%s.npy'%(TRAIN)))
-    b = np.load(os.path.join(feat_dir, 'b_%s.npy'%(TRAIN)))
+    be = np.load(os.path.join(feat_dir, 'be_%s.npy'%(TRAIN)))[:, :32]
+    ma = np.load(os.path.join(feat_dir, 'ma_%s.npy'%(TRAIN)))[:, :32]
 
-    output_size = w.shape[1]
+    output_size = be.shape[1]
     hiddens = [8, 16]
     device = int(cuda_device) if cuda_device != 'None' else None
-    train_type_w = 'w_' + TRAIN
-    train_type_b = 'b_' + TRAIN
+    train_type_be = 'be_' + TRAIN
+    train_type_ma = 'ma_' + TRAIN
 
-    load_name_w = f"gen_GAN_{train_type_w}_{'_'.join(str(d) for d in hiddens)}.pt"
-    load_name_b1 = f"gen1_GAN_{train_type_b}_{'_'.join(str(d) for d in hiddens)}.pt"
-    load_name_b2 = f"gen2_GAN_{train_type_b}_{'_'.join(str(d) for d in hiddens)}.pt"
-    WGenModel = torch.load(os.path.join(model_dir, load_name_w))
-    BGenModel_1 = torch.load(os.path.join(model_dir, load_name_b1))
-    BGenModel_2 = torch.load(os.path.join(model_dir, load_name_b2))
+    load_name_be = f"gen_GAN_{train_type_be}_{'_'.join(str(d) for d in hiddens)}.pt"
+    load_name_ma1 = f"gen1_GAN_{train_type_ma}_{'_'.join(str(d) for d in hiddens)}.pt"
+    load_name_ma2 = f"gen2_GAN_{train_type_ma}_{'_'.join(str(d) for d in hiddens)}.pt"
+    BeGenModel = torch.load(os.path.join(model_dir, load_name_be))
+    MaGenModel_1 = torch.load(os.path.join(model_dir, load_name_ma1))
+    MaGenModel_2 = torch.load(os.path.join(model_dir, load_name_ma2))
 
     if device != None:
         torch.cuda.set_device(device)
-        WGenModel.to_cuda(device)
-        WGenModel = WGenModel.cuda()
-        BGenModel_1.to_cuda(device)
-        BGenModel_1 = BGenModel_1.cuda()
-        BGenModel_2.to_cuda(device)
-        BGenModel_2 = BGenModel_2.cuda()
+        BeGenModel.to_cuda(device)
+        BeGenModel = BeGenModel.cuda()
+        MaGenModel_1.to_cuda(device)
+        MaGenModel_1 = MaGenModel_1.cuda()
+        MaGenModel_2.to_cuda(device)
+        MaGenModel_2 = MaGenModel_2.cuda()
 
     def generate(train_type, GenModel, total_size, seed):
 
@@ -54,10 +54,10 @@ def main(feat_dir, model_dir, TRAIN, index, cuda_device):
         
         return np.array(gen_data)
 
-    gen_data_w = generate(train_type_w, WGenModel, int(w.shape[0]), np.random.randint(1000))
-    gen_data_b1 = generate(train_type_w, BGenModel_1, int(b.shape[0]), np.random.randint(1000))
-    gen_data_b2 = generate(train_type_b, BGenModel_2, int(b.shape[0]), np.random.randint(1000))
+    gen_data_be = generate(train_type_be, BeGenModel, int(be.shape[0]), np.random.randint(1000))
+    gen_data_ma1 = generate(train_type_ma, MaGenModel_1, int(ma.shape[0]), np.random.randint(1000))
+    gen_data_ma2 = generate(train_type_ma, MaGenModel_2, int(ma.shape[0]), np.random.randint(1000))
 
-    np.save(os.path.join(feat_dir, 'w_%s_generated_GAN_%s.npy'%(TRAIN, index)), gen_data_w)
-    np.save(os.path.join(feat_dir, 'b_%s_generated_GAN_1_%s.npy'%(TRAIN, index)), gen_data_b1)
-    np.save(os.path.join(feat_dir, 'b_%s_generated_GAN_2_%s.npy'%(TRAIN, index)), gen_data_b2)
+    np.save(os.path.join(feat_dir, 'be_%s_generated_GAN_%s.npy'%(TRAIN, index)), gen_data_be)
+    np.save(os.path.join(feat_dir, 'ma_%s_generated_GAN_1_%s.npy'%(TRAIN, index)), gen_data_ma1)
+    np.save(os.path.join(feat_dir, 'ma_%s_generated_GAN_2_%s.npy'%(TRAIN, index)), gen_data_ma2)
