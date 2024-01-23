@@ -127,7 +127,7 @@ def main(feat_dir, model_dir, made_dir, TRAIN, cuda_device):
         H = (torch.sum(torch.matmul(S, S.t()), dim=(1, 0)) - N) / (N * (N - 1))
         return batch, H
 
-    def get_NLogP(batch, MADE):
+    def get_NLogP(batch, MADE, Print=False):
         input = batch.float().cuda()
         out = MADE.forward(input)
         mu, logp = torch.chunk(out, 2, dim=1)
@@ -157,7 +157,7 @@ def main(feat_dir, model_dir, made_dir, TRAIN, cuda_device):
         NLogP_be_beMADE = get_NLogP(batch_be, BeMADE)
         NLogP_be_maMADE = get_NLogP((batch_be * be_std.cuda() + be_mean.cuda() - ma_mean.cuda()) / ma_std.cuda(), MaMADE)
         NLogP_ma1_beMADE = get_NLogP(batch_ma1, BeMADE)
-        NLogP_ma1_maMADE = get_NLogP((batch_ma1 * be_std.cuda() + be_mean.cuda() - ma_mean.cuda()) / ma_std.cuda(), MaMADE)
+        NLogP_ma1_maMADE = get_NLogP((batch_ma1 * be_std.cuda() + be_mean.cuda() - ma_mean.cuda()) / ma_std.cuda(), MaMADE, Print=True)
         NLogP_ma2_beMADE = get_NLogP((batch_ma2 * ma_std.cuda() + ma_mean.cuda() - be_mean.cuda()) / be_std.cuda(), BeMADE)
         NLogP_ma2_maMADE = get_NLogP(batch_ma2, MaMADE)
         
@@ -189,7 +189,6 @@ def main(feat_dir, model_dir, made_dir, TRAIN, cuda_device):
             torch.mean(D.f(be_in_MINMAX))
         )
         loss_be = H_be + E1_be + E2_be + E3_be + fm_be
-
         print('epoch: %d, loss_be: %5f, loss_ma1: %5f, loss_ma2: %5f' % (epoch, loss_be, loss_ma1, loss_ma2))
 
         optimizer_be.zero_grad()

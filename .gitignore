@@ -1,0 +1,8 @@
+/main/mix.py
+/data/feat/
+/data/made/
+/data/model/
+/data/result/
+/data/data/btest.npy
+/data/data/wtest.npy
+__pycache__/

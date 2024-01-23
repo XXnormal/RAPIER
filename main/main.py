@@ -26,7 +26,7 @@ def generate_cpus(feat_dir, model_dir, made_dir, indices, cuda):
 
 def main(data_dir, model_dir, feat_dir, made_dir, result_dir, cuda):
     
-    AE.train.main(data_dir, model_dir, 'new', cuda)
+    AE.train.main(data_dir, model_dir, cuda)
     AE.get_feat.main(data_dir, model_dir, feat_dir, 'be', cuda)
     AE.get_feat.main(data_dir, model_dir, feat_dir, 'ma', cuda)
     AE.get_feat.main(data_dir, model_dir, feat_dir, 'test', cuda)
@@ -47,5 +47,5 @@ if __name__ == '__main__':
     model_dir= '../data/model'
     made_dir = '../data/made'
     result_dir='../data/result'
-    cuda = None
+    cuda = 5
     main(data_dir, model_dir, feat_dir, made_dir, result_dir, cuda)

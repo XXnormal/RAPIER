@@ -107,7 +107,19 @@ def main(feat_dir):
             be_num = be_num + 1
             be_all_final.append(X_test[i])
 
+    be_all_final = np.array(be_all_final)
+    ma_all_final = np.array(ma_all_final)
     np.random.shuffle(be_all_final)
     np.random.shuffle(ma_all_final)
-    np.save(os.path.join(feat_dir, 'be_corrected.npy'), np.array(be_all_final))
-    np.save(os.path.join(feat_dir, 'ma_corrected.npy'), np.array(ma_all_final))
+    np.save(os.path.join(feat_dir, 'be_corrected.npy'), be_all_final)
+    np.save(os.path.join(feat_dir, 'ma_corrected.npy'), ma_all_final)
+    
+    wrong_be = be_all_final[:, -1].sum()
+    wrong_ma = ma_all_final.shape[0] - ma_all_final[:, -1].sum()
+    print('malicious in benign set: %d/%d'%(be_all_final.shape[0], wrong_be))
+    print('benign in malicious set: %d/%d'%(ma_all_final.shape[0], wrong_ma))
+    
+    with open('../data/result/label_correction.txt', 'w') as fp:
+        fp.write('malicious in benign set: %d(%d)\n'%(wrong_be, be_all_final.shape[0]))
+        fp.write('benign in malicious set: %d(%d)\n'%(wrong_ma, ma_all_final.shape[0]))
+        fp.write('Remaining noise ratio: %.2f%%\n'%(100 * (wrong_be + wrong_ma) / (be_all_final.shape[0] + ma_all_final.shape[0])))

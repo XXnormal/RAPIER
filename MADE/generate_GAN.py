@@ -55,10 +55,10 @@ def main(feat_dir, model_dir, TRAIN, index, cuda_device):
         
         return np.array(gen_data)
 
-    gen_data_be = generate(train_type_be, BeGenModel, int(be.shape[0]), np.random.randint(1000))
-    gen_data_ma1 = generate(train_type_ma, MaGenModel_1, int(ma.shape[0]), np.random.randint(1000))
-    gen_data_ma2 = generate(train_type_ma, MaGenModel_2, int(ma.shape[0]), np.random.randint(1000))
+    gen_data_be = generate(train_type_be, BeGenModel, int(be.shape[0]) * 2, np.random.randint(1000))
+    gen_data_ma1 = generate(train_type_ma, MaGenModel_1, int(ma.shape[0]) * 2, np.random.randint(1000))
+    gen_data_ma2 = generate(train_type_ma, MaGenModel_2, int(ma.shape[0]) * 2, np.random.randint(1000))
 
-    np.save(os.path.join(feat_dir, 'be_%s_generated_GAN_%s.npy'%(TRAIN, index)), gen_data_be)
-    np.save(os.path.join(feat_dir, 'ma_%s_generated_GAN_1_%s.npy'%(TRAIN, index)), gen_data_ma1)
-    np.save(os.path.join(feat_dir, 'ma_%s_generated_GAN_2_%s.npy'%(TRAIN, index)), gen_data_ma2)
+    np.save(os.path.join(feat_dir, 'be_%s_generated_GAN_%d.npy'%(TRAIN, index)), gen_data_be)
+    np.save(os.path.join(feat_dir, 'ma_%s_generated_GAN_1_%d.npy'%(TRAIN, index)), gen_data_ma1)
+    np.save(os.path.join(feat_dir, 'ma_%s_generated_GAN_2_%d.npy'%(TRAIN, index)), gen_data_ma2)

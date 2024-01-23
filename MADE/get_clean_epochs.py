@@ -12,6 +12,7 @@ def main(feat_dir, made_dir, alpha, TRAIN):
     be = np.load(os.path.join(feat_dir, 'be.npy'))  
     ma = np.load(os.path.join(feat_dir, 'ma.npy'))
     feats = np.concatenate((be, ma), axis=0)
+    print(feats.shape)
     be_number, be_shape = be.shape
     ma_number, ma_shape = ma.shape
     assert(be_shape == ma_shape)
@@ -131,10 +132,27 @@ def main(feat_dir, made_dir, alpha, TRAIN):
                 ma_unknown.append(feat)
                 ma_unknown_lossline.append(nlogp_lst[index])
 
+    be_num = 0
+    ma_num = 0
+    for feat in be_clean:
+        if int(feat[-1]) == 0:
+            be_num += 1
+        else:
+            ma_num += 1
+    print('be_clean: {} be + {} ma.'.format(be_num, ma_num))
+
+    be_num = 0
+    ma_num = 0
+    for feat in ma_clean:
+        if int(feat[-1]) == 0:
+            be_num += 1
+        else:
+            ma_num += 1
+    print('ma_clean: {} be + {} ma.'.format(be_num, ma_num))
+    
     np.save(os.path.join(feat_dir, 'be_groundtruth.npy'), np.array(be_clean))
     np.save(os.path.join(feat_dir, 'ma_groundtruth.npy'), np.array(ma_clean))
     np.save(os.path.join(feat_dir, 'be_unknown.npy'), np.array(be_unknown))
     np.save(os.path.join(feat_dir, 'ma_unknown.npy'), np.array(ma_unknown))
-    
-    print(np.array(be_unknown).shape)
 
+    print(len(be_clean), len(ma_clean), len(be_unknown), len(ma_unknown))

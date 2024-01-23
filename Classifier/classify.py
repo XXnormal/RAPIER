@@ -13,7 +13,7 @@ from .loss import loss_coteaching
 # Hyper Parameters
 batch_size = 128
 learning_rate = 1e-3
-epochs = 500
+epochs = 100
 num_gradual = 10
 forget_rate = 0.1
 exponent = 1
@@ -94,8 +94,8 @@ def main(feat_dir, model_dir, result_dir, TRAIN, cuda_device, parallel=5):
     
     cuda_device = int(cuda_device)
     # get the origin training set
-    be = np.load(os.path.join(feat_dir, 'be.npy'))[:, :32]
-    ma = np.load(os.path.join(feat_dir, 'ma.npy'))[:, :32]
+    be = np.load(os.path.join(feat_dir, 'be_corrected.npy'))[:, :32]
+    ma = np.load(os.path.join(feat_dir, 'ma_corrected.npy'))[:, :32]
     be_shape = be.shape[0]
     ma_shape = ma.shape[0]
 
@@ -115,15 +115,19 @@ def main(feat_dir, model_dir, result_dir, TRAIN, cuda_device, parallel=5):
         
         ma = np.concatenate([
             ma,
-            ma_gen1[:ma_shape // (parallel)],
-            ma_gen2[:ma_shape // (parallel)],
+            ma_gen1[:ma_shape // (parallel) // 5],
+            ma_gen2[:ma_shape // (parallel) // 5],
         ], axis=0)
+
+    print(be.shape, ma.shape)
 
     train_data = np.concatenate([be, ma], axis=0)
     train_label = np.concatenate([np.zeros(be.shape[0]), np.ones(ma.shape[0])], axis=0)
     train_dataset = np.concatenate((train_data, train_label[:, None]), axis=1)
 
-    test_data = np.load(os.path.join(feat_dir, 'test.npy'))[:, :32]
+    test_data_label = np.load(os.path.join(feat_dir, 'test.npy'))
+    test_data = test_data_label[:, :32]
+    test_label = test_data_label[:, -1]
 
     device = int(cuda_device) if cuda_device != 'None' else None
     # define drop rate schedule
@@ -152,12 +156,30 @@ def main(feat_dir, model_dir, result_dir, TRAIN, cuda_device, parallel=5):
     mlp2.train()
     for epoch in tqdm(range(epochs)):
         train(train_loader, epoch, mlp1, optimizer1, mlp2, optimizer2, device)
-        
+    
     mlp1.eval()
-
     test_loader = torch.utils.data.DataLoader(dataset=test_data, batch_size=batch_size, shuffle=False)
     preds = predict(test_loader, mlp1, device)
     np.save(os.path.join(result_dir, 'prediction.npy'), preds)
+
+    scores = np.zeros((2, 2))
+    for label, pred in zip(test_label, preds):
+        scores[int(label), int(pred)] += 1
+    TP = scores[1, 1]
+    FP = scores[0, 1]
+    TN = scores[0, 0]
+    FN = scores[1, 0]
+    
+    Accuracy = (TP + TN) / (TP + TN + FP + FN)
+    Recall = TP / (TP + FN)
+    Precision = TP / (TP + FP)
+    F1score = 2 * Recall * Precision / (Recall + Precision)
+    print(Recall, Precision, F1score)
+    
+    with open('../data/result/detection_result.txt', 'w') as fp:
+        fp.write('Testing data: Benign/Malicious = %d/%d\n'%((TN + FP), (TP + FN)))
+        fp.write('Recall: %.2f, Precision: %.2f, F1: %.2f\n'%(Recall, Precision, F1score))
+        fp.write('Acc: %.2f\n'%(Accuracy))
 
     mlp1 = mlp1.cpu()
     mlp1.to_cpu()

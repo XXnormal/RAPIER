@@ -6,23 +6,26 @@ import sys
 import os
 
 batch_size = 128
-Max_epochs = 500
+Max_epochs = 1000
 
-def main(data_dir, model_dir, mode, device):
+def main(data_dir, model_dir, device):
 
-    device = int(device) if device else None
     # get raw time-series data of training traffic data
     train_data_be = np.load(os.path.join(data_dir, 'be.npy'))
     train_data_ma = np.load(os.path.join(data_dir, 'ma.npy'))
-    
-    assert(train_data_be.shape[1] == 51 and train_data_ma.shape[1] == 51)
-
     train_data = np.concatenate([train_data_be[:, :50], train_data_ma[:, :50]], axis=0)
     np.random.shuffle(train_data)
     
+    #train_data = np.load(os.path.join(data_dir, 'all.npy'))[:, :50]
+    #print(train_data.shape)
+    
     total_size, input_size = train_data.shape
-    max_epochs = Max_epochs
+    print(total_size)
+    device_id = int(device)
+    print(device_id)
+    torch.cuda.set_device(device_id)
 
+    max_epochs = Max_epochs * 200 // total_size 
     dagmm = LSTM_AE_GMM(
         input_size=input_size,
         max_len=2000,
@@ -31,33 +34,24 @@ def main(data_dir, model_dir, mode, device):
         dropout=0.2,
         est_hidden_size=64,
         est_output_size=8,
-        device=device
-    )
-    
-    if device:
-        device_id = int(device)
-        torch.cuda.set_device(device_id)
-        dagmm.to_cuda(device_id)
-        dagmm = dagmm.cuda()
+        device=device_id,
+    ).cuda()
 
     dagmm.train_mode()
     optimizer = torch.optim.Adam(dagmm.parameters(), lr=1e-2)
     for epoch in range(max_epochs):
-        sum_loss = 0
         for batch in range(total_size // batch_size + 1):
             if batch * batch_size >= total_size:
                 break
             optimizer.zero_grad()
             input = train_data[batch_size * batch : batch_size * (batch + 1)]
-            input = torch.Tensor(input).long()
-            if device:
-                input = input.cuda()
-            loss = dagmm.loss(input)
+            loss = dagmm.loss(torch.Tensor(input).long().cuda())
             loss.backward()
             optimizer.step()
-            sum_loss += loss.detach().cpu().numpy()
-        print('epoch:', epoch, 'loss:', sum_loss)
-        
-    dagmm.to_cpu()
-    dagmm = dagmm.cpu()
-    torch.save(dagmm, os.path.join(model_dir, 'gru_ae.pkl'))
+        print('epoch:', epoch, 'loss:', loss)
+        if (epoch + 1) % 50 == 0: # modified
+            dagmm.to_cpu()
+            dagmm = dagmm.cpu()
+            torch.save(dagmm, os.path.join(model_dir, 'gru_ae.pkl'))
+            dagmm.to_cuda(device_id)
+            dagmm = dagmm.cuda()
