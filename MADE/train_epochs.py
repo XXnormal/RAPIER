@@ -65,7 +65,7 @@ def main(feat_dir, model_dir, made_dir, TRAIN, DEVICE, MINLOSS):
         train_losses.append(train_loss)
         val_losses.append(val_loss)
 
-        if (epoch+1) % 10 == 0:
+        if epoch % 10 == 0:
             model = model.cpu()
             torch.save(
                 model, os.path.join(model_dir, 'epochs_' + save_name)
