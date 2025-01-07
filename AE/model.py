@@ -115,14 +115,8 @@ class LSTM_AE_GMM(nn.Module):
         # reconstruct层
         torch.cuda.set_device(self.device)
         x_rec = self.rec_fc2(F.selu(self.rec_fc1(x)))
-        loss = torch.stack([
-            torch.stack([
-                self.cross_entropy(
-                    x_sft.unsqueeze(0), 
-                    y_label.unsqueeze(0)
-                ) for x_sft, y_label in zip(xi, yi)
-            ]) for xi, yi in zip(x_rec, y)
-        ], dim=0)
+        loss = F.cross_entropy(x_rec.view(-1, self.max_len), y.long().view(-1), reduction='none')
+        loss = loss.view(-1, self.input_size)
         mask = y.bool()
         loss_ret = torch.sum(loss * mask, dim=1) / torch.sum(mask, dim=1)
         return loss_ret
